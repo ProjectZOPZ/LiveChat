@@ -8,6 +8,7 @@ namespace LiveChat
 {
     public partial class MessageControl : UserControl
     {
+        private Label lblUsername;
         private Label lblContent;
         private LinkLabel lblLink;
         private PictureBox picContent;
@@ -15,12 +16,11 @@ namespace LiveChat
 
         private GraphicsPath bubblePath;
 
-        // Constructor with isSender alignment
-        public MessageControl(string type, string content, string timestamp, bool isSender = false)
+        public MessageControl(string username, string type, string content, string timestamp, bool isSender = false)
         {
             InitializeComponent();
 
-            // Ensure content is not null
+            username ??= string.Empty;
             content ??= string.Empty;
             timestamp ??= string.Empty;
 
@@ -29,12 +29,10 @@ namespace LiveChat
             Padding = new Padding(10);
             Margin = new Padding(5);
 
-            // Bubble color based on sender
             BackColor = isSender ? Color.FromArgb(25, 25, 25) : Color.FromArgb(25, 25, 25);
             ForeColor = Color.White;
             DoubleBuffered = true;
 
-            // Main layout
             var layout = new TableLayoutPanel
             {
                 AutoSize = true,
@@ -46,7 +44,16 @@ namespace LiveChat
             };
             Controls.Add(layout);
 
-            // Message content
+            lblUsername = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8, FontStyle.Bold),
+                ForeColor = Color.DeepSkyBlue,
+                BackColor = Color.Transparent,
+                Text = username
+            };
+            layout.Controls.Add(lblUsername);
+
             if (IsImageUrl(content))
             {
                 picContent = new PictureBox
@@ -98,7 +105,6 @@ namespace LiveChat
                 layout.Controls.Add(lblContent);
             }
 
-            // Timestamp
             lblTimestamp = new Label
             {
                 AutoSize = true,
@@ -110,7 +116,6 @@ namespace LiveChat
             };
             layout.Controls.Add(lblTimestamp);
 
-            // Align like Telegram
             Anchor = isSender ? AnchorStyles.Right : AnchorStyles.Left;
         }
 
@@ -136,12 +141,10 @@ namespace LiveChat
         private bool IsImageUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url)) return false;
-
             try
             {
-                // Remove query string if exists
                 var uri = new Uri(url);
-                string path = uri.AbsolutePath; // e.g., /attachments/.../image.gif
+                string path = uri.AbsolutePath;
                 return path.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
                        path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                        path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
@@ -153,11 +156,9 @@ namespace LiveChat
             }
         }
 
-
         private bool IsLink(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return false;
-
             return Regex.IsMatch(text, @"^https?:\/\/", RegexOptions.IgnoreCase);
         }
     }

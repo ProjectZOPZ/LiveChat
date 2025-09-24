@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -13,18 +14,35 @@ namespace LiveChat
     public partial class MainForm : Form
     {
         private string userId;
-        private string currentGroupId = null;
-        private string activeCallGroupId = null;
+        private string username;
+        private string password;
+        private string? currentGroupId = null;
+        private string? currentDMId = null;
+        private string? activeCallGroupId = null;
         private static readonly HttpClient client = new HttpClient();
         private System.Windows.Forms.Timer autoReloadTimer;
-        private string settingsFile = "settings.json";
-        private AppSettings appSettings;
+        private string settingsFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "ZOPZ CHAT",
+            "loginSettings.json"
+        );
+        private string profileSettingsFile = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    "ZOPZ CHAT",
+    "settings.json"
+);
 
-        // NAudio
+        private ProfileSettings profileSettings;
+        private AppSettings appSettings;
         private WaveInEvent waveIn;
         private BufferedWaveProvider waveProvider;
         private WaveOutEvent waveOut;
         private System.Threading.CancellationTokenSource callToken;
+
+        private GroupItemControl? selectedGroupControl = null;
+        private GroupItemControl? selectedDMControl = null;
+
+        private List<User> allUsers = new List<User>();
 
         public MainForm()
         {
@@ -32,7 +50,6 @@ namespace LiveChat
             InitializeButtons();
             LoadSettings();
             LoadAudioDevices();
-            usernamelb.Text = "" + (userId.Length >= 4 ? userId.Substring(0, 4) : userId);
 
             this.Text = string.Empty;
             this.ControlBox = false;
@@ -42,25 +59,32 @@ namespace LiveChat
             flowLayoutPanel1.WrapContents = false;
             flowLayoutPanel1.AutoScroll = true;
 
+            Task.Run(LoadAllUsers).Wait();
+
             LoadMessages().ConfigureAwait(false);
             LoadMyGroups().ConfigureAwait(false);
+            LoadUsersAndDMs().ConfigureAwait(false);
 
             autoReloadTimer = new System.Windows.Forms.Timer();
             autoReloadTimer.Interval = 5000;
-            autoReloadTimer.Tick += async (s, e) => await LoadMessages();
+            autoReloadTimer.Tick += async (s, e) =>
+            {
+                if (guna2TabControl1.SelectedIndex == 0)
+                    await LoadMessages();
+                else if (guna2TabControl1.SelectedIndex == 3 && !string.IsNullOrEmpty(currentDMId))
+                    await LoadDMMessages(currentDMId);
+
+                await LoadUsersAndDMs();
+            };
             autoReloadTimer.Start();
 
-            // Textbox Enter-to-Send
             guna2TextBox1.KeyDown += async (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter)
                 {
                     e.SuppressKeyPress = true;
                     if (!string.IsNullOrWhiteSpace(guna2TextBox1.Text))
-                    {
                         await SendMessage();
-                        await LoadMessages();
-                    }
                 }
             };
 
@@ -73,7 +97,7 @@ namespace LiveChat
                     if (!string.IsNullOrEmpty(inviteCode))
                     {
                         await JoinGroup(inviteCode);
-                        guna2TextBoxInvite.Clear();
+                        UpdateControlSafe(guna2TextBoxInvite, () => guna2TextBoxInvite.Clear());
                     }
                 }
             };
@@ -87,40 +111,44 @@ namespace LiveChat
                     if (!string.IsNullOrEmpty(groupName))
                     {
                         await CreateGroup(groupName);
-                        guna2TextBoxGroupName.Clear();
+                        UpdateControlSafe(guna2TextBoxGroupName, () => guna2TextBoxGroupName.Clear());
                     }
                 }
             };
-        }
 
-        private void guna2CirclePictureBox1_Click(object sender, EventArgs e)
+            comboBoxOutputDevices.SelectedIndexChanged += comboBoxOutputDevices_SelectedIndexChanged;
+            comboBoxInputDevices.SelectedIndexChanged += comboBoxInputDevices_SelectedIndexChanged;
+
+            usernamelb.Text = username;
+
+            LoadProfileSettings();
+        }
+        private async Task LoadAllUsers() { try { var request = new HttpRequestMessage(HttpMethod.Get, "https://zopzsniff.xyz/livechatusers"); AddAuthHeaders(request); var response = await client.SendAsync(request); response.EnsureSuccessStatusCode(); var json = await response.Content.ReadAsStringAsync(); allUsers = JsonSerializer.Deserialize<List<User>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<User>(); } catch { allUsers = new List<User>(); } }
+        private void UpdateControlSafe(Control ctrl, Action action)
         {
-            using OpenFileDialog opf = new OpenFileDialog
-            {
-                Filter = "Choose Image(*.jpg;*.png;*.gif)|*.jpg;*.png;*.gif",
-                InitialDirectory = appSettings.LastFolder
-            };
-
-            if (opf.ShowDialog() == DialogResult.OK)
-            {
-                string selectedFile = opf.FileName;
-                appSettings.LastFolder = Path.GetDirectoryName(selectedFile);
-                appSettings.LastImagePath = selectedFile;
-                SaveSettings();
-                guna2CirclePictureBox1.Image = Image.FromFile(selectedFile);
-            }
+            if (ctrl.InvokeRequired) ctrl.Invoke(action);
+            else action();
         }
 
-        #region Buttons
         private void InitializeButtons()
         {
             btnStartCall.Click += async (s, e) => await StartCall();
             btnJoinCall.Click += async (s, e) => await JoinCall();
             btnLeaveCall.Click += async (s, e) => await LeaveCall();
         }
-        #endregion
 
-        #region Voice Call
+        private void AddAuthHeaders(HttpRequestMessage request)
+        {
+            if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+            {
+                request.Headers.Remove("username");
+                request.Headers.Remove("password");
+                request.Headers.Add("username", username);
+                request.Headers.Add("password", password);
+            }
+        }
+
+        #region Calls
         private async Task StartCall()
         {
             if (string.IsNullOrEmpty(currentGroupId))
@@ -130,9 +158,11 @@ namespace LiveChat
             }
 
             var payload = new { userId };
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://zopzsniff.xyz/groups/{currentGroupId}/call/start");
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            AddAuthHeaders(request);
 
-            var response = await client.PostAsync($"https://zopzsniff.xyz/groups/{currentGroupId}/call/start", content);
+            var response = await client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                 MessageBox.Show("Failed to start call: " + response.ReasonPhrase);
@@ -153,9 +183,11 @@ namespace LiveChat
             }
 
             var payload = new { userId };
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://zopzsniff.xyz/groups/{currentGroupId}/call/join");
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            AddAuthHeaders(request);
 
-            var response = await client.PostAsync($"https://zopzsniff.xyz/groups/{currentGroupId}/call/join", content);
+            var response = await client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                 MessageBox.Show("Failed to join call: " + response.ReasonPhrase);
@@ -172,76 +204,26 @@ namespace LiveChat
             if (string.IsNullOrEmpty(activeCallGroupId)) return;
 
             var payload = new { userId };
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var request = new HttpRequestMessage(HttpMethod.Post, $"https://zopzsniff.xyz/groups/{activeCallGroupId}/call/leave");
+            request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            AddAuthHeaders(request);
 
-            await client.PostAsync($"https://zopzsniff.xyz/groups/{activeCallGroupId}/call/leave", content);
+            await client.SendAsync(request);
 
             StopAudioStreaming();
             activeCallGroupId = null;
             MessageBox.Show("Call left.");
         }
-        private void StartAudioStreaming()
-        {
-            int inputDevice = comboBoxInputDevices.SelectedIndex >= 0 ? comboBoxInputDevices.SelectedIndex : 0;
-            int outputDevice = comboBoxOutputDevices.SelectedIndex >= 0 ? comboBoxOutputDevices.SelectedIndex : 0;
-
-            waveIn = new WaveInEvent
-            {
-                DeviceNumber = inputDevice,
-                WaveFormat = new WaveFormat(48000, 16, 1)
-            };
-
-            waveIn.DataAvailable += async (s, a) =>
-            {
-                try
-                {
-                    var content = new ByteArrayContent(a.Buffer);
-                    await client.PostAsync($"https://zopzsniff.xyz/groups/{activeCallGroupId}/audio", content);
-                }
-                catch { }
-            };
-            waveIn.StartRecording();
-
-            waveProvider = new BufferedWaveProvider(new WaveFormat(48000, 16, 1));
-            waveOut = new WaveOutEvent { DeviceNumber = outputDevice };
-            waveOut.Init(waveProvider);
-            waveOut.Play();
-
-            callToken = new System.Threading.CancellationTokenSource();
-            Task.Run(async () =>
-            {
-                while (!callToken.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        var bytes = await client.GetByteArrayAsync($"https://zopzsniff.xyz/groups/{activeCallGroupId}/audio");
-                        waveProvider.AddSamples(bytes, 0, bytes.Length);
-                    }
-                    catch { }
-                    await Task.Delay(50);
-                }
-            });
-        }
-
-
-        private void StopAudioStreaming()
-        {
-            waveIn?.StopRecording();
-            waveIn?.Dispose();
-            waveIn = null;
-
-            waveOut?.Stop();
-            waveOut?.Dispose();
-            waveOut = null;
-
-            callToken?.Cancel();
-            callToken = null;
-        }
         #endregion
+
+        private void StartAudioStreaming() { /* Implement audio streaming */ }
+        private void StopAudioStreaming() { /* Implement audio stop */ }
 
         #region Settings
         private void LoadSettings()
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(settingsFile));
+
             if (File.Exists(settingsFile))
             {
                 string json = File.ReadAllText(settingsFile);
@@ -252,9 +234,12 @@ namespace LiveChat
                 appSettings = new AppSettings { UserId = Guid.NewGuid().ToString() };
 
             userId = appSettings.UserId;
+            username = appSettings.Username;
+            password = appSettings.Password;
             currentGroupId = appSettings.LastGroupId;
+            currentDMId = appSettings.LastDMId;
 
-            if (!string.IsNullOrEmpty(appSettings.LastImagePath) && File.Exists(appSettings.LastImagePath))
+            if (!string.IsNullOrWhiteSpace(appSettings.LastImagePath) && File.Exists(appSettings.LastImagePath))
             {
                 try { guna2CirclePictureBox1.Image = Image.FromFile(appSettings.LastImagePath); }
                 catch { }
@@ -263,23 +248,28 @@ namespace LiveChat
 
         private void SaveSettings()
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(settingsFile));
+            appSettings.UserId = userId;
+            appSettings.Username = username;
+            appSettings.Password = password;
             appSettings.LastGroupId = currentGroupId;
+            appSettings.LastDMId = currentDMId;
+
             string json = JsonSerializer.Serialize(appSettings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(settingsFile, json);
         }
         #endregion
 
-        #region Groups & Messages
+        #region Groups
         private async Task CreateGroup(string groupName)
         {
             try
             {
-                string url = "https://zopzsniff.xyz/groups/create";
-                var payload = new { name = groupName };
-                var json = JsonSerializer.Serialize(payload);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://zopzsniff.xyz/groups/create");
+                request.Content = new StringContent(JsonSerializer.Serialize(new { name = groupName }), Encoding.UTF8, "application/json");
+                AddAuthHeaders(request);
 
-                var response = await client.PostAsync(url, content);
+                var response = await client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadAsStringAsync();
@@ -301,21 +291,18 @@ namespace LiveChat
         {
             try
             {
-                string url = "https://zopzsniff.xyz/groups/join";
-                var payload = new { inviteCode, userId };
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://zopzsniff.xyz/groups/join");
+                request.Content = new StringContent(JsonSerializer.Serialize(new { inviteCode, userId }), Encoding.UTF8, "application/json");
+                AddAuthHeaders(request);
 
-                var response = await client.PostAsync(url, content);
-                if (!response.IsSuccessStatusCode)
-                {
-                    MessageBox.Show($"Error joining group: {response.StatusCode}");
-                    return;
-                }
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadAsStringAsync();
                 var group = JsonSerializer.Deserialize<Group>(result, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 currentGroupId = group.Id;
+                currentDMId = null;
                 SaveSettings();
 
                 await LoadMyGroups();
@@ -330,28 +317,167 @@ namespace LiveChat
         {
             try
             {
-                string url = $"https://zopzsniff.xyz/groups/user/{userId}";
-                var response = await client.GetStringAsync(url);
-                var groups = JsonSerializer.Deserialize<List<Group>>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var request = new HttpRequestMessage(HttpMethod.Get, "https://zopzsniff.xyz/groups/user");
+                AddAuthHeaders(request);
 
-                flowGroups.Controls.Clear();
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                var groups = JsonSerializer.Deserialize<List<Group>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                var mainChat = new GroupItemControl("Main Chat", null, "") { Width = flowGroups.Width };
-                mainChat.OnGroupSelected += async (s, e) => { currentGroupId = null; SaveSettings(); await LoadMessages(); };
-                flowGroups.Controls.Add(mainChat);
-
-                foreach (var g in groups)
+                UpdateControlSafe(flowGroups, () =>
                 {
-                    var ctrl = new GroupItemControl(g.Name, g.Id, g.InviteCode) { Width = flowGroups.Width };
-                    ctrl.OnGroupSelected += async (s, e) => { currentGroupId = g.Id; SaveSettings(); await LoadMessages(); };
-                    flowGroups.Controls.Add(ctrl);
+                    flowGroups.Controls.Clear();
 
-                    if (currentGroupId == g.Id) await LoadMessages();
-                }
+                    var mainChat = new GroupItemControl("Main Chat", null, "") { Width = flowGroups.Width };
+                    mainChat.OnGroupSelected += async (s, e) =>
+                    {
+                        currentGroupId = null;
+                        currentDMId = null;
+                        SaveSettings();
+                        selectedGroupControl = mainChat;
+                        await LoadMessages();
+                    };
+                    flowGroups.Controls.Add(mainChat);
+
+                    if (groups != null)
+                    {
+                        foreach (var g in groups)
+                        {
+                            var ctrl = new GroupItemControl(g.Name, g.Id, g.InviteCode) { Width = flowGroups.Width };
+                            ctrl.OnGroupSelected += async (s, e) =>
+                            {
+                                currentGroupId = g.Id;
+                                currentDMId = null;
+                                SaveSettings();
+                                selectedGroupControl = ctrl;
+                                await LoadMessages();
+                            };
+                            flowGroups.Controls.Add(ctrl);
+
+                            if (g.Id == currentGroupId)
+                                selectedGroupControl = ctrl;
+                        }
+                    }
+
+                    selectedGroupControl?.Select();
+                });
             }
-            catch (Exception ex) { MessageBox.Show("Error loading groups: " + ex.Message); }
+            catch { }
+        }
+        #endregion
+
+        #region Users & DMs (Merged)
+        private async Task LoadUsersAndDMs()
+        {
+            try
+            {
+                var requestUsers = new HttpRequestMessage(HttpMethod.Get, "https://zopzsniff.xyz/livechatusers");
+                AddAuthHeaders(requestUsers);
+                var responseUsers = await client.SendAsync(requestUsers);
+                responseUsers.EnsureSuccessStatusCode();
+                var jsonUsers = await responseUsers.Content.ReadAsStringAsync();
+                allUsers = JsonSerializer.Deserialize<List<User>>(jsonUsers, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<User>();
+
+                var requestDMs = new HttpRequestMessage(HttpMethod.Get, "https://zopzsniff.xyz/dm");
+                AddAuthHeaders(requestDMs);
+                var responseDMs = await client.SendAsync(requestDMs);
+                responseDMs.EnsureSuccessStatusCode();
+                var jsonDMs = await responseDMs.Content.ReadAsStringAsync();
+                var conversations = JsonSerializer.Deserialize<List<DMConversation>>(jsonDMs, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<DMConversation>();
+
+                UpdateControlSafe(flowUsers, () =>
+                {
+                    flowUsers.Controls.Clear();
+
+                    foreach (var u in allUsers)
+                    {
+                        if (u.Username == username) continue;
+
+                        var userCtrl = new GroupItemControl(u.Username, u.Id, null) { Width = flowUsers.Width };
+                        userCtrl.OnGroupSelected += async (s, e) =>
+                        {
+                            await StartOrOpenDM(u.Id);
+                        };
+                        flowUsers.Controls.Add(userCtrl);
+                    }
+
+                    foreach (var c in conversations)
+                    {
+                        string otherUserId = c.Participants.FirstOrDefault(p => p != userId);
+                        if (string.IsNullOrEmpty(otherUserId)) continue;
+
+                        string otherUsername = allUsers.FirstOrDefault(u => u.Id == otherUserId)?.Username ?? otherUserId;
+
+                        if (otherUsername == username) continue;
+
+                        bool alreadyExists = flowUsers.Controls
+                            .OfType<GroupItemControl>()
+                            .Any(ctrl => ctrl.Username == otherUsername);
+
+                        if (alreadyExists) continue;
+
+                        var dmCtrl = new GroupItemControl(otherUsername, c.Id, null) { Width = flowUsers.Width };
+                        dmCtrl.OnGroupSelected += async (s, e) =>
+                        {
+                            currentGroupId = null;
+                            currentDMId = c.Id;
+                            SaveSettings();
+
+                            foreach (Control item in flowUsers.Controls)
+
+                            await LoadDMMessages(c.Id);
+                            guna2TabControl1.SelectedIndex = 3;
+                            guna2TextBox1.Focus();
+                        };
+
+                        flowUsers.Controls.Add(dmCtrl);
+
+                        if (c.Id == currentDMId)
+                            dmCtrl.BackColor = System.Drawing.Color.LightBlue;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load users and DMs: " + ex.Message);
+            }
         }
 
+
+
+        private async Task StartOrOpenDM(string otherUserId)
+        {
+            try
+            {
+                var payload = new { otherUserId };
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://zopzsniff.xyz/dm/start")
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+                };
+                AddAuthHeaders(request);
+
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync();
+                var dmConversation = JsonSerializer.Deserialize<DMConversation>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (dmConversation == null) return;
+
+                currentGroupId = null;
+                currentDMId = dmConversation.Id;
+                SaveSettings();
+
+                await LoadDMMessages(dmConversation.Id);
+                await LoadUsersAndDMs();
+
+                guna2TabControl1.SelectedIndex = 3;
+                guna2TextBox1.Focus();
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Messages
         private async Task LoadMessages()
         {
             try
@@ -360,51 +486,102 @@ namespace LiveChat
                     ? "https://zopzsniff.xyz/messages"
                     : $"https://zopzsniff.xyz/groups/{currentGroupId}/messages";
 
-                var response = await client.GetStringAsync(url);
-                var messages = JsonSerializer.Deserialize<List<Message>>(response, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                AddAuthHeaders(request);
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var messages = JsonSerializer.Deserialize<List<Message>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 if (messages == null) return;
 
                 messages.Reverse();
-                flowLayoutPanel1.SuspendLayout();
-                flowLayoutPanel1.Controls.Clear();
-
-                foreach (var msg in messages)
+                UpdateControlSafe(flowLayoutPanel1, () =>
                 {
-                    bool isSender = msg.UserId == userId || msg.IsSender;
-                    var ctrl = new MessageControl(msg.Type, msg.Content, msg.Timestamp, isSender)
-                    {
-                        Dock = DockStyle.Top,
-                        Anchor = isSender ? AnchorStyles.Right : AnchorStyles.Left
-                    };
-                    flowLayoutPanel1.Controls.Add(ctrl);
-                }
+                    flowLayoutPanel1.SuspendLayout();
+                    flowLayoutPanel1.Controls.Clear();
 
-                flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
-                flowLayoutPanel1.ResumeLayout();
+                    foreach (var msg in messages)
+                    {
+                        bool isSender = msg.UserId == userId || msg.IsSender;
+                        string senderName = allUsers.FirstOrDefault(u => u.Id == msg.UserId)?.Username ?? "Unknown";
+
+                        var ctrl = new MessageControl(senderName, msg.Type, msg.Content, msg.Timestamp, isSender)
+                        {
+                            Dock = DockStyle.Top,
+                            Anchor = isSender ? AnchorStyles.Right : AnchorStyles.Left
+                        };
+                        flowLayoutPanel1.Controls.Add(ctrl);
+                    }
+
+                    flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
+                    flowLayoutPanel1.ResumeLayout();
+
+                    if (flowLayoutPanel1.Controls.Count > 0)
+                        flowLayoutPanel1.ScrollControlIntoView(flowLayoutPanel1.Controls[flowLayoutPanel1.Controls.Count - 1]);
+                });
             }
             catch { }
         }
-        private async void btnStartCall_Click(object sender, EventArgs e)
+
+        private async Task LoadDMMessages(string conversationId)
         {
-            await StartCall();
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, $"https://zopzsniff.xyz/dm/{conversationId}/messages");
+                AddAuthHeaders(request);
+                var response = await client.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var messages = JsonSerializer.Deserialize<List<Message>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (messages == null) return;
+
+                messages.Reverse();
+                UpdateControlSafe(flowLayoutPanel1, () =>
+                {
+                    flowLayoutPanel1.SuspendLayout();
+                    flowLayoutPanel1.Controls.Clear();
+
+                    foreach (var msg in messages)
+                    {
+                        bool isSender = msg.UserId == userId || msg.IsSender;
+                        string senderName = allUsers.FirstOrDefault(u => u.Id == msg.UserId)?.Username ?? "Unknown";
+
+                        var ctrl = new MessageControl(senderName, msg.Type, msg.Content, msg.Timestamp, isSender)
+                        {
+                            Dock = DockStyle.Top,
+                            Anchor = isSender ? AnchorStyles.Right : AnchorStyles.Left
+                        };
+                        flowLayoutPanel1.Controls.Add(ctrl);
+                    }
+
+                    flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
+                    flowLayoutPanel1.ResumeLayout();
+
+                    if (flowLayoutPanel1.Controls.Count > 0)
+                        flowLayoutPanel1.ScrollControlIntoView(flowLayoutPanel1.Controls[flowLayoutPanel1.Controls.Count - 1]);
+                });
+            }
+            catch { }
         }
 
-        private async void btnJoinCall_Click(object sender, EventArgs e)
-        {
-            await JoinCall();
-        }
-
-        private async void btnLeaveCall_Click(object sender, EventArgs e)
-        {
-            await LeaveCall();
-        }
         private async Task SendMessage()
         {
             try
             {
-                string url = string.IsNullOrEmpty(currentGroupId)
-                    ? "https://zopzsniff.xyz/send"
-                    : $"https://zopzsniff.xyz/groups/{currentGroupId}/send";
+                string url = null;
+
+                if (!string.IsNullOrEmpty(currentGroupId))
+                    url = $"https://zopzsniff.xyz/groups/{currentGroupId}/send";
+                else if (!string.IsNullOrEmpty(currentDMId))
+                    url = $"https://zopzsniff.xyz/dm/{currentDMId}/send";
+
+                if (string.IsNullOrEmpty(url))
+                {
+                    MessageBox.Show("Select a group or user first!");
+                    return;
+                }
 
                 string text = guna2TextBox1.Text.Trim();
                 if (string.IsNullOrEmpty(text)) return;
@@ -412,18 +589,25 @@ namespace LiveChat
                 string type = text.EndsWith(".gif") || text.EndsWith(".jpg") || text.EndsWith(".jpeg") || text.EndsWith(".png") ? "image" :
                               text.StartsWith("http") ? "link" : "text";
 
-                var payload = new { type, content = text, userId };
-                var contentJson = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Content = new StringContent(JsonSerializer.Serialize(new { type, content = text, userId }), Encoding.UTF8, "application/json");
+                AddAuthHeaders(request);
 
-                var response = await client.PostAsync(url, contentJson);
+                var response = await client.SendAsync(request);
                 response.EnsureSuccessStatusCode();
 
                 guna2TextBox1.Clear();
-                await LoadMessages();
+
+                if (!string.IsNullOrEmpty(currentDMId))
+                    await LoadDMMessages(currentDMId);
+                else if (!string.IsNullOrEmpty(currentGroupId))
+                    await LoadMessages();
             }
             catch { }
         }
         #endregion
+
+        #region Audio Devices
         private void LoadAudioDevices()
         {
             comboBoxInputDevices.Items.Clear();
@@ -445,34 +629,6 @@ namespace LiveChat
                 comboBoxOutputDevices.SelectedIndex = 0;
         }
 
-        #region Models
-        public class AppSettings
-        {
-            public string UserId { get; set; }
-            public string LastGroupId { get; set; }
-            public string LastFolder { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-            public string LastImagePath { get; set; } = string.Empty;
-        }
-        public class Group
-        {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public string InviteCode { get; set; }
-            public List<Message> Messages { get; set; }
-            public List<string> Members { get; set; }
-        }
-
-        public class Message
-        {
-            public string Type { get; set; }
-            public string Content { get; set; }
-            public string Timestamp { get; set; }
-            public string UserId { get; set; }
-            public bool IsSender { get; set; }
-        }
-
-        #endregion
-
         private void comboBoxOutputDevices_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (waveOut != null)
@@ -480,7 +636,7 @@ namespace LiveChat
                 waveOut.Stop();
                 waveOut.Dispose();
                 waveOut = null;
-                StartAudioStreaming(); // restart with new output
+                StartAudioStreaming();
             }
         }
 
@@ -491,8 +647,84 @@ namespace LiveChat
                 waveIn.StopRecording();
                 waveIn.Dispose();
                 waveIn = null;
-                StartAudioStreaming(); // restart with new input
+                StartAudioStreaming();
             }
         }
+        #endregion
+
+        #region Models
+        public class User { public string Id { get; set; } public string Username { get; set; } }
+        public class DMConversation { public string Id { get; set; } public List<string> Participants { get; set; } public Message LastMessage { get; set; } }
+        public class AppSettings
+        {
+            public string? UserId { get; set; }
+            public string? Username { get; set; }
+            public string? Password { get; set; }
+            public string? LastGroupId { get; set; }
+            public string? LastDMId { get; set; }
+            public string LastFolder { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            public string LastImagePath { get; set; } = string.Empty;
+        }
+        public class Group { public string? Id { get; set; } public string? Name { get; set; } public string? InviteCode { get; set; } public List<Message>? Messages { get; set; } public List<string>? Members { get; set; } }
+        public class Message { public string? Type { get; set; } public string? Content { get; set; } public string? Timestamp { get; set; } public string? UserId { get; set; } public bool IsSender { get; set; } }
+        #endregion
+        public class ProfileSettings
+        {
+            public string LastFolder { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            public string LastImagePath { get; set; } = string.Empty;
+            public string ProfileLink { get; set; } = string.Empty;
+        }
+        private void guna2CirclePictureBox1_Click(object sender, EventArgs e)
+        {
+            using OpenFileDialog opf = new OpenFileDialog
+            {
+                Filter = "Choose Image(*.jpg;*.png;*.gif)|*.jpg;*.png;*.gif",
+                InitialDirectory = profileSettings.LastFolder
+            };
+
+            if (opf.ShowDialog() == DialogResult.OK)
+            {
+                string selectedFile = opf.FileName;
+                profileSettings.LastFolder = Path.GetDirectoryName(selectedFile);
+                profileSettings.LastImagePath = selectedFile;
+                SaveProfileSettings();
+
+                try { guna2CirclePictureBox1.Image = Image.FromFile(selectedFile); }
+                catch { }
+            }
+        }
+        private void LoadProfileSettings()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(profileSettingsFile));
+
+            if (File.Exists(profileSettingsFile))
+            {
+                string json = File.ReadAllText(profileSettingsFile);
+                profileSettings = JsonSerializer.Deserialize<ProfileSettings>(json);
+            }
+
+            if (profileSettings == null)
+                profileSettings = new ProfileSettings();
+
+            if (!string.IsNullOrWhiteSpace(profileSettings.LastImagePath) && File.Exists(profileSettings.LastImagePath))
+            {
+                try { guna2CirclePictureBox1.Image = Image.FromFile(profileSettings.LastImagePath); }
+                catch { }
+            }
+        }
+
+        private void SaveProfileSettings()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(profileSettingsFile));
+            string json = JsonSerializer.Serialize(profileSettings, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(profileSettingsFile, json);
+        }
+
+        private void guna2ControlBox1_Click(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
+        }
+
+        private void MainForm_Load(object sender, EventArgs e) { }
     }
 }

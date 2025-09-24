@@ -18,6 +18,11 @@ namespace LiveChat
         [JsonIgnore]
         public string InviteCode { get; set; }
 
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [JsonIgnore]
+        public string Username { get; }
+
         public event EventHandler OnGroupSelected;
 
         public GroupItemControl()
@@ -30,25 +35,24 @@ namespace LiveChat
         {
             GroupId = groupId;
             InviteCode = inviteCode;
+            Username = groupName;
 
             BuildUi(groupName ?? string.Empty, inviteCode ?? string.Empty);
         }
 
         private void BuildUi(string groupName, string inviteCode)
         {
-            // Dark mode
             Height = 60;
             BackColor = Color.FromArgb(25, 25, 25);
             Margin = new Padding(0, 0, 0, 1);
 
-            // Avatar circle
             var avatarPanel = new Panel
             {
                 Width = 40,
                 Height = 40,
                 Left = 10,
                 Top = 10,
-                BackColor = Color.FromArgb(30,30,30)
+                BackColor = Color.FromArgb(30, 30, 30)
             };
             avatarPanel.Paint += (s, e) =>
             {
@@ -65,7 +69,6 @@ namespace LiveChat
                 }
             };
 
-            // Group name label
             var lblName = new Label
             {
                 Text = groupName,
@@ -76,7 +79,6 @@ namespace LiveChat
                 Top = 10
             };
 
-            // Invite code label
             var lblInvite = new Label
             {
                 Text = string.IsNullOrEmpty(inviteCode) ? "" : $"Invite: {inviteCode}",
@@ -91,11 +93,9 @@ namespace LiveChat
             Controls.Add(lblName);
             Controls.Add(lblInvite);
 
-            // Hover effect for dark mode
             MouseEnter += (s, e) => BackColor = Color.FromArgb(45, 45, 45);
             MouseLeave += (s, e) => BackColor = Color.FromArgb(25, 25, 25);
 
-            // Click forwarding
             void RaiseSelected() => OnGroupSelected?.Invoke(this, EventArgs.Empty);
 
             Click += (s, e) => RaiseSelected();

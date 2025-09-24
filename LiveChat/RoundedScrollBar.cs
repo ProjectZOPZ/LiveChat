@@ -73,14 +73,12 @@ namespace LiveChat
             base.OnPaint(e);
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Track
             using (SolidBrush trackBrush = new SolidBrush(Color.LightGray))
             {
                 Rectangle trackRect = new Rectangle(Width / 4, 0, Width / 2, Height);
                 e.Graphics.FillRoundedRectangle(trackBrush, trackRect, 7);
             }
 
-            // Thumb
             using (SolidBrush thumbBrush = new SolidBrush(Color.DodgerBlue))
             {
                 Rectangle thumbRect = new Rectangle(2, thumbTop, Width - 4, thumbHeight);

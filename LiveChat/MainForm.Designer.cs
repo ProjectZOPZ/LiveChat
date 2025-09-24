@@ -64,15 +64,18 @@
             guna2TextBoxInvite = new Guna.UI2.WinForms.Guna2TextBox();
             guna2TextBox1 = new Guna.UI2.WinForms.Guna2TextBox();
             guna2DragControl1 = new Guna.UI2.WinForms.Guna2DragControl(components);
-            guna2vScrollBar1 = new Guna.UI2.WinForms.Guna2VScrollBar();
-            flowLayoutPanel1 = new FlowLayoutPanel();
             backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             guna2TabControl1 = new Guna.UI2.WinForms.Guna2TabControl();
             tabPage5 = new TabPage();
+            guna2vScrollBar1 = new Guna.UI2.WinForms.Guna2VScrollBar();
+            flowLayoutPanel1 = new FlowLayoutPanel();
             tabPage6 = new TabPage();
             label3 = new Label();
             label2 = new Label();
             tabPage1 = new TabPage();
+            guna2TrackBar1 = new Guna.UI2.WinForms.Guna2TrackBar();
+            guna2Separator2 = new Guna.UI2.WinForms.Guna2Separator();
+            guna2Separator1 = new Guna.UI2.WinForms.Guna2Separator();
             label6 = new Label();
             comboBoxInputDevices = new Guna.UI2.WinForms.Guna2ComboBox();
             label5 = new Label();
@@ -80,6 +83,8 @@
             btnStartCall = new Guna.UI2.WinForms.Guna2Button();
             btnLeaveCall = new Guna.UI2.WinForms.Guna2Button();
             btnJoinCall = new Guna.UI2.WinForms.Guna2Button();
+            guna2vScrollBar5 = new Guna.UI2.WinForms.Guna2VScrollBar();
+            flowUsers = new FlowLayoutPanel();
             backgroundWorker2 = new System.ComponentModel.BackgroundWorker();
             flowGroups = new FlowLayoutPanel();
             guna2ResizeForm1 = new Guna.UI2.WinForms.Guna2ResizeForm(components);
@@ -91,8 +96,9 @@
             guna2CirclePictureBox1 = new Guna.UI2.WinForms.Guna2CirclePictureBox();
             usernamelb = new Label();
             guna2TextBox2 = new Guna.UI2.WinForms.Guna2TextBox();
-            guna2Separator1 = new Guna.UI2.WinForms.Guna2Separator();
-            guna2Separator2 = new Guna.UI2.WinForms.Guna2Separator();
+            guna2TabControl2 = new Guna.UI2.WinForms.Guna2TabControl();
+            tabPage4 = new TabPage();
+            tabPage7 = new TabPage();
             panel1.SuspendLayout();
             guna2TabControl1.SuspendLayout();
             tabPage5.SuspendLayout();
@@ -101,6 +107,9 @@
             panel2.SuspendLayout();
             panel3.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)guna2CirclePictureBox1).BeginInit();
+            guna2TabControl2.SuspendLayout();
+            tabPage4.SuspendLayout();
+            tabPage7.SuspendLayout();
             SuspendLayout();
             // 
             // panel1
@@ -113,7 +122,7 @@
             panel1.Dock = DockStyle.Top;
             panel1.Location = new Point(0, 0);
             panel1.Name = "panel1";
-            panel1.Size = new Size(932, 28);
+            panel1.Size = new Size(981, 28);
             panel1.TabIndex = 1;
             // 
             // label1
@@ -136,7 +145,7 @@
             guna2ControlBox3.Dock = DockStyle.Right;
             guna2ControlBox3.FillColor = Color.FromArgb(15, 15, 15);
             guna2ControlBox3.IconColor = Color.WhiteSmoke;
-            guna2ControlBox3.Location = new Point(797, 0);
+            guna2ControlBox3.Location = new Point(846, 0);
             guna2ControlBox3.Name = "guna2ControlBox3";
             guna2ControlBox3.ShadowDecoration.CustomizableEdges = customizableEdges2;
             guna2ControlBox3.Size = new Size(45, 28);
@@ -151,7 +160,7 @@
             guna2ControlBox2.Dock = DockStyle.Right;
             guna2ControlBox2.FillColor = Color.FromArgb(15, 15, 15);
             guna2ControlBox2.IconColor = Color.WhiteSmoke;
-            guna2ControlBox2.Location = new Point(842, 0);
+            guna2ControlBox2.Location = new Point(891, 0);
             guna2ControlBox2.Name = "guna2ControlBox2";
             guna2ControlBox2.ShadowDecoration.CustomizableEdges = customizableEdges4;
             guna2ControlBox2.Size = new Size(45, 28);
@@ -165,11 +174,12 @@
             guna2ControlBox1.Dock = DockStyle.Right;
             guna2ControlBox1.FillColor = Color.FromArgb(15, 15, 15);
             guna2ControlBox1.IconColor = Color.WhiteSmoke;
-            guna2ControlBox1.Location = new Point(887, 0);
+            guna2ControlBox1.Location = new Point(936, 0);
             guna2ControlBox1.Name = "guna2ControlBox1";
             guna2ControlBox1.ShadowDecoration.CustomizableEdges = customizableEdges6;
             guna2ControlBox1.Size = new Size(45, 28);
             guna2ControlBox1.TabIndex = 0;
+            guna2ControlBox1.Click += guna2ControlBox1_Click;
             // 
             // guna2TextBoxGroupName
             // 
@@ -242,7 +252,7 @@
             guna2TextBox1.PlaceholderText = "Type ur message here";
             guna2TextBox1.SelectedText = "";
             guna2TextBox1.ShadowDecoration.CustomizableEdges = customizableEdges12;
-            guna2TextBox1.Size = new Size(764, 41);
+            guna2TextBox1.Size = new Size(760, 41);
             guna2TextBox1.TabIndex = 2;
             // 
             // guna2DragControl1
@@ -250,32 +260,6 @@
             guna2DragControl1.DockIndicatorTransparencyValue = 0.6D;
             guna2DragControl1.TargetControl = panel1;
             guna2DragControl1.TransparentWhileDrag = false;
-            // 
-            // guna2vScrollBar1
-            // 
-            guna2vScrollBar1.BindingContainer = flowLayoutPanel1;
-            guna2vScrollBar1.FillColor = Color.FromArgb(10, 10, 10);
-            guna2vScrollBar1.InUpdate = false;
-            guna2vScrollBar1.LargeChange = 10;
-            guna2vScrollBar1.Location = new Point(748, 3);
-            guna2vScrollBar1.Name = "guna2vScrollBar1";
-            guna2vScrollBar1.ScrollbarSize = 18;
-            guna2vScrollBar1.Size = new Size(18, 380);
-            guna2vScrollBar1.TabIndex = 1;
-            guna2vScrollBar1.ThumbColor = Color.FromArgb(25, 25, 25);
-            guna2vScrollBar1.ThumbSize = 5F;
-            guna2vScrollBar1.ThumbStyle = Guna.UI2.WinForms.Enums.ThumbStyle.Inset;
-            // 
-            // flowLayoutPanel1
-            // 
-            flowLayoutPanel1.AutoScroll = true;
-            flowLayoutPanel1.BackColor = Color.FromArgb(10, 10, 10);
-            flowLayoutPanel1.Dock = DockStyle.Fill;
-            flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
-            flowLayoutPanel1.Location = new Point(3, 3);
-            flowLayoutPanel1.Name = "flowLayoutPanel1";
-            flowLayoutPanel1.Size = new Size(763, 380);
-            flowLayoutPanel1.TabIndex = 27;
             // 
             // guna2TabControl1
             // 
@@ -285,10 +269,10 @@
             guna2TabControl1.Controls.Add(tabPage1);
             guna2TabControl1.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             guna2TabControl1.ItemSize = new Size(130, 40);
-            guna2TabControl1.Location = new Point(155, 28);
+            guna2TabControl1.Location = new Point(208, 28);
             guna2TabControl1.Name = "guna2TabControl1";
             guna2TabControl1.SelectedIndex = 0;
-            guna2TabControl1.Size = new Size(777, 434);
+            guna2TabControl1.Size = new Size(773, 434);
             guna2TabControl1.TabButtonHoverState.BorderColor = Color.Empty;
             guna2TabControl1.TabButtonHoverState.FillColor = Color.FromArgb(25, 25, 25);
             guna2TabControl1.TabButtonHoverState.Font = new Font("Segoe UI Semibold", 10F);
@@ -318,9 +302,35 @@
             tabPage5.Location = new Point(4, 44);
             tabPage5.Name = "tabPage5";
             tabPage5.Padding = new Padding(3);
-            tabPage5.Size = new Size(769, 386);
+            tabPage5.Size = new Size(765, 386);
             tabPage5.TabIndex = 6;
             tabPage5.Text = "Chat";
+            // 
+            // guna2vScrollBar1
+            // 
+            guna2vScrollBar1.BindingContainer = flowLayoutPanel1;
+            guna2vScrollBar1.FillColor = Color.FromArgb(10, 10, 10);
+            guna2vScrollBar1.InUpdate = false;
+            guna2vScrollBar1.LargeChange = 10;
+            guna2vScrollBar1.Location = new Point(744, 3);
+            guna2vScrollBar1.Name = "guna2vScrollBar1";
+            guna2vScrollBar1.ScrollbarSize = 18;
+            guna2vScrollBar1.Size = new Size(18, 380);
+            guna2vScrollBar1.TabIndex = 1;
+            guna2vScrollBar1.ThumbColor = Color.FromArgb(25, 25, 25);
+            guna2vScrollBar1.ThumbSize = 5F;
+            guna2vScrollBar1.ThumbStyle = Guna.UI2.WinForms.Enums.ThumbStyle.Inset;
+            // 
+            // flowLayoutPanel1
+            // 
+            flowLayoutPanel1.AutoScroll = true;
+            flowLayoutPanel1.BackColor = Color.FromArgb(10, 10, 10);
+            flowLayoutPanel1.Dock = DockStyle.Fill;
+            flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
+            flowLayoutPanel1.Location = new Point(3, 3);
+            flowLayoutPanel1.Name = "flowLayoutPanel1";
+            flowLayoutPanel1.Size = new Size(759, 380);
+            flowLayoutPanel1.TabIndex = 27;
             // 
             // tabPage6
             // 
@@ -333,7 +343,7 @@
             tabPage6.Location = new Point(4, 44);
             tabPage6.Name = "tabPage6";
             tabPage6.Padding = new Padding(3);
-            tabPage6.Size = new Size(769, 386);
+            tabPage6.Size = new Size(765, 386);
             tabPage6.TabIndex = 7;
             tabPage6.Text = "Settings";
             // 
@@ -362,6 +372,7 @@
             // tabPage1
             // 
             tabPage1.BackColor = Color.FromArgb(25, 25, 25);
+            tabPage1.Controls.Add(guna2TrackBar1);
             tabPage1.Controls.Add(guna2Separator2);
             tabPage1.Controls.Add(guna2Separator1);
             tabPage1.Controls.Add(label6);
@@ -374,9 +385,35 @@
             tabPage1.Location = new Point(4, 44);
             tabPage1.Name = "tabPage1";
             tabPage1.Padding = new Padding(3);
-            tabPage1.Size = new Size(769, 386);
+            tabPage1.Size = new Size(765, 386);
             tabPage1.TabIndex = 8;
             tabPage1.Text = "Voice Call";
+            // 
+            // guna2TrackBar1
+            // 
+            guna2TrackBar1.Location = new Point(354, 38);
+            guna2TrackBar1.Name = "guna2TrackBar1";
+            guna2TrackBar1.Size = new Size(406, 23);
+            guna2TrackBar1.TabIndex = 13;
+            guna2TrackBar1.ThumbColor = Color.FromArgb(160, 113, 255);
+            // 
+            // guna2Separator2
+            // 
+            guna2Separator2.BackColor = Color.Transparent;
+            guna2Separator2.FillColor = Color.FromArgb(15, 15, 15);
+            guna2Separator2.Location = new Point(0, 228);
+            guna2Separator2.Name = "guna2Separator2";
+            guna2Separator2.Size = new Size(769, 10);
+            guna2Separator2.TabIndex = 12;
+            // 
+            // guna2Separator1
+            // 
+            guna2Separator1.BackColor = Color.Transparent;
+            guna2Separator1.FillColor = Color.FromArgb(15, 15, 15);
+            guna2Separator1.Location = new Point(0, 79);
+            guna2Separator1.Name = "guna2Separator1";
+            guna2Separator1.Size = new Size(769, 10);
+            guna2Separator1.TabIndex = 11;
             // 
             // label6
             // 
@@ -456,7 +493,6 @@
             btnStartCall.Size = new Size(94, 45);
             btnStartCall.TabIndex = 2;
             btnStartCall.Text = "Start Call";
-            btnStartCall.Click += btnStartCall_Click;
             // 
             // btnLeaveCall
             // 
@@ -474,7 +510,6 @@
             btnLeaveCall.Size = new Size(94, 45);
             btnLeaveCall.TabIndex = 1;
             btnLeaveCall.Text = "Leave Call";
-            btnLeaveCall.Click += btnLeaveCall_Click;
             // 
             // btnJoinCall
             // 
@@ -492,14 +527,41 @@
             btnJoinCall.Size = new Size(94, 45);
             btnJoinCall.TabIndex = 0;
             btnJoinCall.Text = "Join Call";
-            btnJoinCall.Click += btnJoinCall_Click;
+            // 
+            // guna2vScrollBar5
+            // 
+            guna2vScrollBar5.BindingContainer = flowUsers;
+            guna2vScrollBar5.FillColor = Color.FromArgb(10, 10, 10);
+            guna2vScrollBar5.InUpdate = false;
+            guna2vScrollBar5.LargeChange = 10;
+            guna2vScrollBar5.Location = new Point(177, 3);
+            guna2vScrollBar5.Name = "guna2vScrollBar5";
+            guna2vScrollBar5.ScrollbarSize = 18;
+            guna2vScrollBar5.Size = new Size(18, 381);
+            guna2vScrollBar5.TabIndex = 30;
+            guna2vScrollBar5.ThumbColor = Color.FromArgb(25, 25, 25);
+            guna2vScrollBar5.ThumbSize = 5F;
+            guna2vScrollBar5.ThumbStyle = Guna.UI2.WinForms.Enums.ThumbStyle.Inset;
+            // 
+            // flowUsers
+            // 
+            flowUsers.AutoScroll = true;
+            flowUsers.BackColor = Color.FromArgb(10, 10, 10);
+            flowUsers.Dock = DockStyle.Fill;
+            flowUsers.FlowDirection = FlowDirection.TopDown;
+            flowUsers.Location = new Point(3, 3);
+            flowUsers.Name = "flowUsers";
+            flowUsers.Size = new Size(192, 381);
+            flowUsers.TabIndex = 32;
             // 
             // flowGroups
             // 
             flowGroups.AutoScroll = true;
-            flowGroups.Location = new Point(0, 28);
+            flowGroups.BackColor = Color.FromArgb(10, 10, 10);
+            flowGroups.Dock = DockStyle.Fill;
+            flowGroups.Location = new Point(3, 3);
             flowGroups.Name = "flowGroups";
-            flowGroups.Size = new Size(153, 434);
+            flowGroups.Size = new Size(192, 381);
             flowGroups.TabIndex = 26;
             // 
             // guna2Elipse2
@@ -511,9 +573,9 @@
             panel2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel2.BackColor = Color.FromArgb(15, 15, 15);
             panel2.Controls.Add(guna2TextBox1);
-            panel2.Location = new Point(155, 464);
+            panel2.Location = new Point(208, 464);
             panel2.Name = "panel2";
-            panel2.Size = new Size(777, 53);
+            panel2.Size = new Size(773, 53);
             panel2.TabIndex = 27;
             // 
             // guna2vScrollBar2
@@ -522,10 +584,10 @@
             guna2vScrollBar2.FillColor = Color.FromArgb(10, 10, 10);
             guna2vScrollBar2.InUpdate = false;
             guna2vScrollBar2.LargeChange = 10;
-            guna2vScrollBar2.Location = new Point(135, 28);
+            guna2vScrollBar2.Location = new Point(177, 3);
             guna2vScrollBar2.Name = "guna2vScrollBar2";
             guna2vScrollBar2.ScrollbarSize = 18;
-            guna2vScrollBar2.Size = new Size(18, 434);
+            guna2vScrollBar2.Size = new Size(18, 381);
             guna2vScrollBar2.TabIndex = 2;
             guna2vScrollBar2.ThumbColor = Color.FromArgb(25, 25, 25);
             guna2vScrollBar2.ThumbSize = 5F;
@@ -541,7 +603,7 @@
             panel3.Controls.Add(guna2TextBox2);
             panel3.Location = new Point(0, 464);
             panel3.Name = "panel3";
-            panel3.Size = new Size(153, 53);
+            panel3.Size = new Size(206, 53);
             panel3.TabIndex = 28;
             // 
             // label4
@@ -605,44 +667,81 @@
             guna2TextBox2.PlaceholderText = "Type ur message here";
             guna2TextBox2.SelectedText = "";
             guna2TextBox2.ShadowDecoration.CustomizableEdges = customizableEdges25;
-            guna2TextBox2.Size = new Size(717, 41);
+            guna2TextBox2.Size = new Size(770, 41);
             guna2TextBox2.TabIndex = 2;
             // 
-            // guna2Separator1
+            // guna2TabControl2
             // 
-            guna2Separator1.BackColor = Color.Transparent;
-            guna2Separator1.FillColor = Color.FromArgb(15, 15, 15);
-            guna2Separator1.Location = new Point(0, 79);
-            guna2Separator1.Name = "guna2Separator1";
-            guna2Separator1.Size = new Size(769, 10);
-            guna2Separator1.TabIndex = 11;
+            guna2TabControl2.Controls.Add(tabPage4);
+            guna2TabControl2.Controls.Add(tabPage7);
+            guna2TabControl2.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            guna2TabControl2.ItemSize = new Size(70, 40);
+            guna2TabControl2.Location = new Point(0, 28);
+            guna2TabControl2.Name = "guna2TabControl2";
+            guna2TabControl2.SelectedIndex = 0;
+            guna2TabControl2.Size = new Size(206, 435);
+            guna2TabControl2.TabButtonHoverState.BorderColor = Color.Empty;
+            guna2TabControl2.TabButtonHoverState.FillColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabButtonHoverState.Font = new Font("Segoe UI Semibold", 10F);
+            guna2TabControl2.TabButtonHoverState.ForeColor = Color.White;
+            guna2TabControl2.TabButtonHoverState.InnerColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabButtonIdleState.BorderColor = Color.Empty;
+            guna2TabControl2.TabButtonIdleState.FillColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabButtonIdleState.Font = new Font("Segoe UI Semibold", 10F);
+            guna2TabControl2.TabButtonIdleState.ForeColor = Color.White;
+            guna2TabControl2.TabButtonIdleState.InnerColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabButtonSelectedState.BorderColor = Color.Empty;
+            guna2TabControl2.TabButtonSelectedState.FillColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabButtonSelectedState.Font = new Font("Segoe UI Semibold", 10F);
+            guna2TabControl2.TabButtonSelectedState.ForeColor = Color.White;
+            guna2TabControl2.TabButtonSelectedState.InnerColor = Color.FromArgb(30, 30, 30);
+            guna2TabControl2.TabButtonSize = new Size(70, 40);
+            guna2TabControl2.TabIndex = 29;
+            guna2TabControl2.TabMenuBackColor = Color.FromArgb(25, 25, 25);
+            guna2TabControl2.TabMenuOrientation = Guna.UI2.WinForms.TabMenuOrientation.HorizontalTop;
             // 
-            // guna2Separator2
+            // tabPage4
             // 
-            guna2Separator2.BackColor = Color.Transparent;
-            guna2Separator2.FillColor = Color.FromArgb(15, 15, 15);
-            guna2Separator2.Location = new Point(0, 228);
-            guna2Separator2.Name = "guna2Separator2";
-            guna2Separator2.Size = new Size(769, 10);
-            guna2Separator2.TabIndex = 12;
+            tabPage4.BackColor = Color.FromArgb(25, 25, 25);
+            tabPage4.Controls.Add(guna2vScrollBar2);
+            tabPage4.Controls.Add(flowGroups);
+            tabPage4.ForeColor = Color.WhiteSmoke;
+            tabPage4.Location = new Point(4, 44);
+            tabPage4.Name = "tabPage4";
+            tabPage4.Padding = new Padding(3);
+            tabPage4.Size = new Size(198, 387);
+            tabPage4.TabIndex = 7;
+            tabPage4.Text = "Groups";
+            // 
+            // tabPage7
+            // 
+            tabPage7.BackColor = Color.FromArgb(25, 25, 25);
+            tabPage7.Controls.Add(guna2vScrollBar5);
+            tabPage7.Controls.Add(flowUsers);
+            tabPage7.Location = new Point(4, 44);
+            tabPage7.Name = "tabPage7";
+            tabPage7.Padding = new Padding(3);
+            tabPage7.Size = new Size(198, 387);
+            tabPage7.TabIndex = 8;
+            tabPage7.Text = "Dms";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(10, 10, 10);
-            ClientSize = new Size(932, 517);
+            ClientSize = new Size(981, 517);
+            Controls.Add(guna2TabControl2);
             Controls.Add(panel3);
-            Controls.Add(guna2vScrollBar2);
             Controls.Add(panel2);
-            Controls.Add(flowGroups);
             Controls.Add(guna2TabControl1);
             Controls.Add(panel1);
-            FormBorderStyle = FormBorderStyle.None;
+            FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Livechat";
+            Load += MainForm_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             guna2TabControl1.ResumeLayout(false);
@@ -655,6 +754,9 @@
             panel3.ResumeLayout(false);
             panel3.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)guna2CirclePictureBox1).EndInit();
+            guna2TabControl2.ResumeLayout(false);
+            tabPage4.ResumeLayout(false);
+            tabPage7.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -667,7 +769,6 @@
         private Guna.UI2.WinForms.Guna2ControlBox guna2ControlBox1;
         private Label label1;
         private Guna.UI2.WinForms.Guna2TabControl guna2TabControl1;
-        private TabPage tabPage5;
         private TabPage tabPage6;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
         private Guna.UI2.WinForms.Guna2TextBox guna2TextBoxInvite;
@@ -676,11 +777,9 @@
         private Label label3;
         private Label label2;
         private FlowLayoutPanel flowGroups;
-        private Guna.UI2.WinForms.Guna2VScrollBar guna2vScrollBar1;
         private Guna.UI2.WinForms.Guna2ResizeForm guna2ResizeForm1;
         private Panel panel2;
         private Guna.UI2.WinForms.Guna2Elipse guna2Elipse2;
-        private FlowLayoutPanel flowLayoutPanel1;
         private Guna.UI2.WinForms.Guna2VScrollBar guna2vScrollBar2;
         private Panel panel3;
         private Guna.UI2.WinForms.Guna2CirclePictureBox guna2CirclePictureBox1;
@@ -697,5 +796,14 @@
         private Guna.UI2.WinForms.Guna2ComboBox comboBoxOutputDevices;
         private Guna.UI2.WinForms.Guna2Separator guna2Separator2;
         private Guna.UI2.WinForms.Guna2Separator guna2Separator1;
+        private Guna.UI2.WinForms.Guna2TrackBar guna2TrackBar1;
+        private Guna.UI2.WinForms.Guna2VScrollBar guna2vScrollBar5;
+        private FlowLayoutPanel flowUsers;
+        private Guna.UI2.WinForms.Guna2TabControl guna2TabControl2;
+        private TabPage tabPage4;
+        private TabPage tabPage7;
+        private TabPage tabPage5;
+        private Guna.UI2.WinForms.Guna2VScrollBar guna2vScrollBar1;
+        private FlowLayoutPanel flowLayoutPanel1;
     }
 }
